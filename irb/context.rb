@@ -1,13 +1,13 @@
 #
 #   irb/context.rb - irb context
-#   	$Release Version: 0.9.5$
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.9.5$
+#       $Revision: 11708 $
+#       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 require "irb/workspace"
 
@@ -16,18 +16,13 @@ module IRB
     #
     # Arguments:
     #   input_method: nil -- stdin or readline
-    #		      String -- File
-    #		      other -- using this as InputMethod
+    #                 String -- File
+    #                 other -- using this as InputMethod
     #
     def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
       @irb = irb
-      if workspace
-	@workspace = workspace
-      else
-	@workspace = WorkSpace.new
-      end
-      @thread = Thread.current if defined? Thread
-#      @irb_level = 0
+      @workspace = workspace || WorkSpace.new
+      @thread = Thread.current
 
       # copy of default configuration
       @ap_name = IRB.conf[:AP_NAME]
@@ -35,7 +30,6 @@ module IRB
       @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
-      @inspect_mode = IRB.conf[:INSPECT_MODE]
 
       self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
       self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
@@ -45,56 +39,54 @@ module IRB
       @ignore_sigint = IRB.conf[:IGNORE_SIGINT]
       @ignore_eof = IRB.conf[:IGNORE_EOF]
 
-      @back_trace_limit = IRB.conf[:BACK_TRACE_LIMIT]
-      
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
 
       if IRB.conf[:SINGLE_IRB] or !defined?(JobManager)
-	@irb_name = IRB.conf[:IRB_NAME]
+        @irb_name = IRB.conf[:IRB_NAME]
       else
-	@irb_name = "irb#"+IRB.JobManager.n_jobs.to_s
+        @irb_name = "irb#"+IRB.JobManager.n_jobs.to_s
       end
       @irb_path = "(" + @irb_name + ")"
 
       case input_method
       when nil
-	case use_readline?
-	when nil
-	  if (defined?(ReadlineInputMethod) && STDIN.tty? &&
-	      IRB.conf[:PROMPT_MODE] != :INF_RUBY)
-	    @io = ReadlineInputMethod.new
-	  else
-	    @io = StdioInputMethod.new
-	  end
-	when false
-	  @io = StdioInputMethod.new
-	when true
-	  if defined?(ReadlineInputMethod)
-	    @io = ReadlineInputMethod.new
-	  else
-	    @io = StdioInputMethod.new
-	  end
-	end
+        case use_readline?
+        when nil
+          if (defined?(ReadlineInputMethod) && STDIN.tty? &&
+              IRB.conf[:PROMPT_MODE] != :INF_RUBY)
+            @io = ReadlineInputMethod.new
+          else
+            @io = StdioInputMethod.new
+          end
+        when false
+          @io = StdioInputMethod.new
+        when true
+          if defined?(ReadlineInputMethod)
+            @io = ReadlineInputMethod.new
+          else
+            @io = StdioInputMethod.new
+          end
+        end
 
       when String
-	@io = FileInputMethod.new(input_method)
-	@irb_name = File.basename(input_method)
-	@irb_path = input_method
+        @io = FileInputMethod.new(input_method)
+        @irb_name = File.basename(input_method)
+        @irb_path = input_method
       else
-	@io = input_method
+        @io = input_method
       end
       self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
 
       if output_method
-	@output_method = output_method
+        @output_method = output_method
       else
-	@output_method = StdioOutputMethod.new
+        @output_method = StdioOutputMethod.new
       end
 
-      @verbose = IRB.conf[:VERBOSE] 
+      @verbose = IRB.conf[:VERBOSE]
       @echo = IRB.conf[:ECHO]
       if @echo.nil?
-	@echo = true
+        @echo = true
       end
       @debug_level = IRB.conf[:DEBUG_LEVEL]
     end
@@ -107,16 +99,14 @@ module IRB
     attr_accessor :workspace
     attr_reader :thread
     attr_accessor :io
-    
+
     attr_accessor :irb
     attr_accessor :ap_name
     attr_accessor :rc
     attr_accessor :load_modules
     attr_accessor :irb_name
     attr_accessor :irb_path
-
-    attr_reader :use_readline
-    attr_reader :inspect_mode
+    attr_accessor :use_readline
 
     attr_reader :prompt_mode
     attr_accessor :prompt_i
@@ -124,15 +114,13 @@ module IRB
     attr_accessor :prompt_c
     attr_accessor :prompt_n
     attr_accessor :auto_indent_mode
-    attr_accessor :return_format
+    attr_accessor :display
 
     attr_accessor :ignore_sigint
     attr_accessor :ignore_eof
     attr_accessor :echo
     attr_accessor :verbose
     attr_reader :debug_level
-
-    attr_accessor :back_trace_limit
 
     alias use_readline? use_readline
     alias rc? rc
@@ -142,26 +130,26 @@ module IRB
 
     def verbose?
       if @verbose.nil?
-	if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod) 
-	  false
-	elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
-	  true
-	else
-	  false
-	end
+        if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
+          false
+        elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
+          true
+        else
+          false
+        end
       end
     end
 
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-		(defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
+                (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 
     attr_reader :last_value
 
     def set_last_value(value)
       @last_value = value
-      @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
+      @workspace.evaluate self, "_ = IRB.current_context.last_value"
     end
 
     attr_reader :irb_name
@@ -173,35 +161,20 @@ module IRB
       @prompt_s = pconf[:PROMPT_S]
       @prompt_c = pconf[:PROMPT_C]
       @prompt_n = pconf[:PROMPT_N]
-      @return_format = pconf[:RETURN]
+      @display = pconf[:RETURN]
       if ai = pconf.include?(:AUTO_INDENT)
-	@auto_indent_mode = ai
+        @auto_indent_mode = ai
       else
-	@auto_indent_mode = IRB.conf[:AUTO_INDENT]
+        @auto_indent_mode = IRB.conf[:AUTO_INDENT]
       end
-    end
-    
-    def inspect?
-      @inspect_mode.nil? or @inspect_mode
     end
 
     def file_input?
       @io.class == FileInputMethod
     end
 
-    def inspect_mode=(opt)
-      if opt
-	@inspect_mode = opt
-      else
-	@inspect_mode = !@inspect_mode
-      end
-      print "Switch to#{unless @inspect_mode; ' non';end} inspect mode.\n" if verbose?
-      @inspect_mode
-    end
-
     def use_readline=(opt)
       @use_readline = opt
-      print "use readline module\n" if @use_readline
     end
 
     def debug_level=(value)
@@ -217,13 +190,87 @@ module IRB
     def evaluate(line, line_no)
       @line_no = line_no
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
-#      @workspace.evaluate("_ = IRB.conf[:MAIN_CONTEXT]._")
-#      @_ = @workspace.evaluate(line, irb_path, line_no)
+
+      return unless echo?
+      display.show(last_value)
+    end
+
+    # TODO: Do you *ever* want sigint to exit, given ctrl-d?
+    def handle_sigint
+      unless ignore_sigint?
+        print_verbose "\naborting!"
+        exit
+      end
+    end
+
+    PROMPTS = {:ltype => :prompt_s, :continue => :prompt_c, :indent => :prompt_n, :normal => :prompt_i}
+
+    def set_prompt(scanner)
+      scanner.set_prompt do |state, ltype, indent, line_no|
+        format = send(PROMPTS[state]) || ""
+
+        prompt = prompting? ? format_prompt(format, ltype, indent, line_no) : ""
+
+        if auto_indent_mode && !ltype
+          indent += 1 if state == :continue
+          prompt += " " * indent * 2
+        end
+
+        io.prompt = prompt
+      end
+    end
+
+    def print_verbose(str)
+      puts str if verbose?
+    end
+
+    # Formats the prompt according to a format string. Available
+    # segments in the format string are:
+    #
+    # %N:: The irb name (irb)
+    # %m:: The main context (main)
+    # %M:: The main context, inspected ("main")
+    # %l:: The current parsing state (see below)
+    # %i:: The amount of current indentation, passed
+    #     to format. For instance %03i would produce
+    #     "004" if the current indentation level was
+    #     4.
+    # %n:: The current line number, passed to format
+    #     as in "i"
+    # %%:: a literal %
+    #
+    # Parsing states
+    # = =begin to =end
+    # ' single quoted string
+    # " double quoted string (includes %{} etc)
+    # : symbol literal created using %s
+    # / regular expression (includes %r{} etc)
+    # ` shelling out
+    # ] array (includes %w{} etc)
+    def format_prompt(prompt, ltype, indent, line_no)
+      prompt.gsub(/%([0-9]+)?([a-zA-Z])/) do
+        case $2
+        when "N"
+          irb_name
+        when "m"
+          main.to_s
+        when "M"
+          main.inspect
+        when "l"
+          ltype
+        when "i"
+          format("%#{$1}d", indent)
+        when "n"
+          format("%#{$1}d", line_no)
+        when "%"
+          "%"
+        end
+      end
     end
 
     alias __exit__ exit
     def exit(ret = 0)
-      IRB.irb_exit(@irb, ret)
+      IRB.irb_exit(ret)
     end
 
     NOPRINTING_IVARS = ["@last_value"]
@@ -234,22 +281,20 @@ module IRB
     def inspect
       array = []
       for ivar in instance_variables.sort{|e1, e2| e1 <=> e2}
-	name = ivar.sub(/^@(.*)$/){$1}
-	val = instance_eval(ivar)
-	case ivar
-	when *NOPRINTING_IVARS
-	  array.push format("conf.%s=%s", name, "...")
-	when *NO_INSPECTING_IVARS
-	  array.push format("conf.%s=%s", name, val.to_s)
-	when *IDNAME_IVARS
-	  array.push format("conf.%s=:%s", name, val.id2name)
-	else
-	  array.push format("conf.%s=%s", name, val.inspect)
-	end
+        name = ivar.sub(/^@(.*)$/){$1}
+        val = instance_eval(ivar)
+        case ivar
+        when *NOPRINTING_IVARS
+          array.push format("conf.%s=%s", name, "...")
+        when *NO_INSPECTING_IVARS
+          array.push format("conf.%s=%s", name, val.to_s)
+        when *IDNAME_IVARS
+          array.push format("conf.%s=:%s", name, val.id2name)
+        else
+          array.push format("conf.%s=%s", name, val.inspect)
+        end
       end
       array.join("\n")
     end
-    alias __to_s__ to_s
-    alias to_s inspect
   end
 end

@@ -25,7 +25,7 @@ module IRB
     end
 
     def irb_context
-      IRB.CurrentContext
+      IRB.current_context
     end
 
     @ALIASES = [

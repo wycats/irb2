@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-$:.push File.expand_path(File.join(File.dirname(__FILE__), ".."))
+$:.unshift File.expand_path(File.join(File.dirname(__FILE__), ".."))
 require "irb"
 IRB.start

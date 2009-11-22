@@ -39,7 +39,7 @@ class RubyLex
 
   def initialize
     lex_init
-    set_input(STDIN)
+    set_input { STDIN.gets }
 
     @seek = 0
     @exp_line_no = @line_no = 1
@@ -75,15 +75,8 @@ class RubyLex
   attr_reader :indent
 
   # io functions
-  def set_input(io, p = nil, &block)
-    @io = io
-    if p.respond_to?(:call)
-      @input = p
-    elsif block_given?
-      @input = block
-    else
-      @input = Proc.new{@io.gets}
-    end
+  def set_input(&block)
+    @input = block
   end
 
   def get_readed
@@ -100,7 +93,6 @@ class RubyLex
 
   def getc
     while @rests.empty?
-#      return nil unless buf_input
       @rests.push nil unless buf_input
     end
     c = @rests.shift
@@ -127,10 +119,6 @@ class RubyLex
     end
     return nil if l == "" and c.nil?
     l
-  end
-
-  def eof?
-    @io.eof?
   end
 
   def getc_of_rests
@@ -202,9 +190,21 @@ class RubyLex
     end
   end
 
+  def state
+    if @ltype
+      :ltype
+    elsif @continue
+      :continue
+    elsif @indent > 0
+      :indent
+    else
+      :normal
+    end
+  end
+
   def prompt
     if @prompt
-      @prompt.call(@ltype, @indent, @continue, @line_no)
+      @prompt.call(state, @ltype, @indent, @line_no)
     end
   end
 

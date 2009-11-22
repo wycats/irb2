@@ -1,5 +1,5 @@
 #
-#   loader.rb - 
+#   loader.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision: 11708 $
 #   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
@@ -7,12 +7,73 @@
 #
 # --
 #
-#   
+#
 #
 
 
 module IRB
   class LoadAbort < Exception;end
+
+  class Irb
+    def with_name(path, name, &block)
+      @context.suspend_name(path, name, &block)
+    end
+
+    def with_workspace(workspace, &block)
+      @context.with_workspace(workspace, &block)
+    end
+
+    def with_input_method(input_method, &block)
+      @context.with_input_method(input_method, &block)
+    end
+
+    def with_context(context, &block)
+      @context.with_context(context, &block)
+    end
+  end
+
+  class Context
+    def with_name(path, name)
+      self.irb_path, old_path = path, irb_path if path
+      self.irb_name, old_name = name, irb_name if name
+
+      begin
+        yield old_path, old_name
+      ensure
+        self.irb_path = old_path if path
+        self.irb_name = old_name if name
+      end
+    end
+
+    def with_workspace(workspace)
+      self.workspace, old_workspace = workspace, workspace
+
+      begin
+        yield old_workspace
+      ensure
+        self.workspace = old_workspace
+      end
+    end
+
+    def with_input_method(input_method)
+      @io, old_io = input_method, @io
+
+      begin
+        yield old_io
+      ensure
+        @io = old_io
+      end
+    end
+
+    def with_context(context)
+      @context, old_context = context, @context
+      begin
+        yield old_context
+      ensure
+        @context = old_context
+      end
+    end
+  end
 
   module IrbLoader
     @RCS_ID='-$Id: loader.rb 11708 2007-02-12 23:01:19Z shyouhei $-'
@@ -42,49 +103,46 @@ module IRB
     end
 
     def source_file(path)
-      irb.suspend_name(path, File.basename(path)) do
-	irb.suspend_input_method(FileInputMethod.new(path)) do
-	  |back_io|
-	  irb.signal_status(:IN_LOAD) do 
-	    if back_io.kind_of?(FileInputMethod)
-	      irb.eval_input
-	    else
-	      begin
-		irb.eval_input
-	      rescue LoadAbort
-		print "load abort!!\n"
-	      end
-	    end
-	  end
-	end
+      irb.with_name(path, File.basename(path)) do
+        irb.with_input_method(FileInputMethod.new(path)) do |io|
+          irb.with_signal_status(:IN_LOAD) do
+            if io.kind_of?(FileInputMethod)
+              irb.eval_input
+            else
+              begin
+                irb.eval_input
+                    rescue LoadAbort
+                print "load abort!!\n"
+              end
+            end
+          end
+        end
       end
     end
 
     def load_file(path, priv = nil)
-      irb.suspend_name(path, File.basename(path)) do
-	
-	if priv
-	  ws = WorkSpace.new(Module.new)
-	else
-	  ws = WorkSpace.new
-	end
-	irb.suspend_workspace(ws) do
-	  irb.suspend_input_method(FileInputMethod.new(path)) do
-	    |back_io|
-	    irb.signal_status(:IN_LOAD) do 
-#	      p irb.conf
-	      if back_io.kind_of?(FileInputMethod)
-		irb.eval_input
-	      else
-		begin
-		  irb.eval_input
-		rescue LoadAbort
-		  print "load abort!!\n"
-		end
-	      end
-	    end
-	  end
-	end
+      irb.with_path(path, File.basename(path)) do
+
+      if priv
+        ws = WorkSpace.new(Module.new)
+      else
+        ws = WorkSpace.new
+      end
+      irb.with_workspace(ws) do
+        irb.with_input_method(FileInputMethod.new(path)) do |io|
+          irb.with_signal_status(:IN_LOAD) do
+            if old_io.kind_of?(FileInputMethod)
+              irb.eval_input
+                  else
+              begin
+                irb.eval_input
+              rescue LoadAbort
+                print "load abort!!\n"
+              end
+            end
+          end
+        end
+      end
       end
     end
 
@@ -97,7 +155,7 @@ module IRB
  	@io = FileInputMethod.new(path)
  	@irb_name = File.basename(path)
 	@irb_path = path
-	@irb.signal_status(:IN_LOAD) do
+	@irb.with_signal_status(:IN_LOAD) do
 	  if back_io.kind_of?(FileInputMethod)
 	    @irb.eval_input
 	  else

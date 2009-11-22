@@ -1,9 +1,9 @@
 #
 #   irb/input-method.rb - input methods used irb
-#   	$Release Version: 0.9.5$
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.9.5$
+#       $Revision: 11708 $
+#       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -12,9 +12,9 @@
 module IRB
   # 
   # InputMethod
-  #	StdioInputMethod
-  #	FileInputMethod
-  #	(ReadlineInputMethod)
+  #     StdioInputMethod
+  #     FileInputMethod
+  #     (ReadlineInputMethod)
   #
   STDIN_FILE_NAME = "(line)"
   class InputMethod
@@ -32,7 +32,7 @@ module IRB
     end
     public :gets
 
-    def readable_atfer_eof?
+    def readable_after_eof?
       false
     end
   end
@@ -53,7 +53,7 @@ module IRB
       $stdin.eof?
     end
 
-    def readable_atfer_eof?
+    def readable_after_eof?
       true
     end
 
@@ -75,9 +75,7 @@ module IRB
 
     def gets
       print @prompt
-      l = @io.gets
-#      print @prompt, l
-      l
+      @io.gets
     end
   end
 
@@ -86,33 +84,33 @@ module IRB
     class ReadlineInputMethod < InputMethod
       include Readline 
       def initialize
-	super
+        super
 
-	@line_no = 0
-	@line = []
-	@eof = false
+        @line_no = 0
+        @line = []
+        @eof = false
       end
 
       def gets
-	if l = readline(@prompt, false)
+        if l = readline(@prompt, false)
           HISTORY.push(l) if !l.empty?
-	  @line[@line_no += 1] = l + "\n"
-	else
-	  @eof = true
-	  l
-	end
+          @line[@line_no += 1] = l + "\n"
+        else
+          @eof = true
+          nil
+        end
       end
 
       def eof?
-	@eof
+        @eof
       end
 
-      def readable_atfer_eof?
-	true
+      def readable_after_eof?
+        true
       end
 
       def line(line_no)
-	@line[line_no]
+        @line[line_no]
       end
     end
   rescue LoadError

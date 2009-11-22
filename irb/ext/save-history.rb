@@ -31,11 +31,8 @@ module IRB
 
     def save_history=(val)
       IRB.conf[:SAVE_HISTORY] = val
-      if val
-	main_context = IRB.conf[:MAIN_CONTEXT]
-	main_context = self unless main_context
-	main_context.init_save_history
-      end
+      context = current_context || self
+      context.init_save_history if val
     end
 
     def history_file
