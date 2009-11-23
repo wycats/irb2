@@ -27,26 +27,16 @@ module IRB
       # copy of default configuration
       @ap_name = IRB.conf[:AP_NAME]
       @rc = IRB.conf[:RC]
-      @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
 
+      # Extra modules
       self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
       self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
       self.use_loader = IRB.conf[:USE_LOADER] if IRB.conf[:USE_LOADER]
       self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVAL_HISTORY]
 
-      @ignore_sigint = IRB.conf[:IGNORE_SIGINT]
-      @ignore_eof = IRB.conf[:IGNORE_EOF]
-
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
-
-      if IRB.conf[:SINGLE_IRB] or !defined?(JobManager)
-        @irb_name = IRB.conf[:IRB_NAME]
-      else
-        @irb_name = "irb#"+IRB.JobManager.n_jobs.to_s
-      end
-      @irb_path = "(" + @irb_name + ")"
 
       case input_method
       when nil
@@ -103,7 +93,6 @@ module IRB
     attr_accessor :irb
     attr_accessor :ap_name
     attr_accessor :rc
-    attr_accessor :load_modules
     attr_accessor :irb_name
     attr_accessor :irb_path
     attr_accessor :use_readline
@@ -116,16 +105,12 @@ module IRB
     attr_accessor :auto_indent_mode
     attr_accessor :display
 
-    attr_accessor :ignore_sigint
-    attr_accessor :ignore_eof
     attr_accessor :echo
     attr_accessor :verbose
     attr_reader :debug_level
 
     alias use_readline? use_readline
     alias rc? rc
-    alias ignore_sigint? ignore_sigint
-    alias ignore_eof? ignore_eof
     alias echo? echo
 
     def verbose?
@@ -152,7 +137,13 @@ module IRB
       @workspace.evaluate self, "_ = IRB.current_context.last_value"
     end
 
-    attr_reader :irb_name
+    def irb_name
+      @irb_name ||= "irb" + IRB.job_manager.current_job_ixZd
+    end
+
+    def irb_path
+      @irb_path ||= "(" + irb_name + ")"
+    end
 
     def prompt_mode=(mode)
       @prompt_mode = mode
@@ -189,18 +180,13 @@ module IRB
 
     def evaluate(line, line_no)
       @line_no = line_no
-      set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
+
+      value = @workspace.evaluate(self, line, irb_path, line_no)
+
+      set_last_value(value)
 
       return unless echo?
       display.show(last_value)
-    end
-
-    # TODO: Do you *ever* want sigint to exit, given ctrl-d?
-    def handle_sigint
-      unless ignore_sigint?
-        print_verbose "\naborting!"
-        exit
-      end
     end
 
     PROMPTS = {:ltype => :prompt_s, :continue => :prompt_c, :indent => :prompt_n, :normal => :prompt_i}

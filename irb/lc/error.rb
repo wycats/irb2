@@ -20,7 +20,6 @@ module IRB
   def_exception :CantReturnToNormalMode, "Can't return to normal mode."
   def_exception :IllegalParameter, "Illegal parameter(%s)."
   def_exception :IrbAlreadyDead, "Irb is already dead."
-  def_exception :IrbSwitchedToCurrentThread, "Switched to current thread."
   def_exception :NoSuchJob, "No such job(%s)."
   def_exception :CantShiftToMultiIrbMode, "Can't shift to multi irb mode."
   def_exception :CantChangeBinding, "Can't change binding to (%s)."

@@ -25,7 +25,6 @@ class XMP
     ws = IRB::WorkSpace.new(bind)
     @io = StringInputMethod.new
     @irb = IRB::Irb.new(ws, @io)
-    @irb.context.ignore_sigint = false
 
     IRB.main_context = @irb.context
   end
@@ -33,19 +32,13 @@ class XMP
   def puts(exps)
     @io.puts exps
 
-    if @irb.context.ignore_sigint
-      begin
-        trap_proc_b = trap("SIGINT"){@irb.signal_handle}
-        catch(:irb_exit) do
-          @irb.eval_input
-        end
-      ensure
-        trap("SIGINT", trap_proc_b)
-      end
-    else
+    begin
+      trap_proc_b = trap(:INT) { @irb.signal_handle }
       catch(:irb_exit) do
         @irb.eval_input
       end
+    ensure
+      trap(:INT, trap_proc_b)
     end
   end
 

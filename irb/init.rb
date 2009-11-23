@@ -18,14 +18,13 @@ module IRB
     IRB.init_error
     IRB.parse_opts
     IRB.run_config
-    IRB.load_modules
 
     unless conf[:PROMPT][conf[:PROMPT_MODE]]
       IRB.fail(UndefinedPromptMode, conf[:PROMPT_MODE])
     end
   end
 
-  class ObjectDisplay
+  class AbstractDisplay
     attr_accessor :io
 
     def initialize(io = STDOUT)
@@ -33,28 +32,48 @@ module IRB
     end
 
     def show(result)
-      output format(result)
+      raise NotImplementedError
     end
 
   private
-    def output(string)
+    def output(string, result)
       @io.puts string
     end
 
     def format(result)
+      return "" if IRB::CommandResult === result
       result.inspect
     end
   end
 
-  class ArrowDisplay < ObjectDisplay
+  module EliminateCommands
+    def output(str, result)
+      return if IRB::CommandResult === result
+      super
+    end
+  end
+
+  class SimpleDisplay < AbstractDisplay
+    include EliminateCommands
+
     def show(result)
-      output "=> #{format(result)}"
+      output format(result), result
+    end
+  end
+
+  class ArrowDisplay < SimpleDisplay
+    include EliminateCommands
+
+    def show(result)
+      output "#{IRB.job_manager.current_job_id}   => #{format(result)}", result
     end
   end
 
   class XMPDisplay < ArrowDisplay
+    include EliminateCommands
+
     def show(result)
-      output "   ==> #{format(result)}"
+      output "   ==> #{format(result)}", result
     end
   end
 
@@ -73,15 +92,12 @@ module IRB
     conf[:IRB_LIB_PATH] = File.dirname(__FILE__)
 
     conf[:RC] = true
-    conf[:LOAD_MODULES] = []
 
     conf[:MATH_MODE] = false
     conf[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
     conf[:INSPECT_MODE] = nil
     conf[:USE_TRACER] = false
     conf[:USE_LOADER] = false
-    conf[:IGNORE_SIGINT] = true
-    conf[:IGNORE_EOF] = false
     conf[:ECHO] = nil
     conf[:VERBOSE] = nil
 
@@ -94,7 +110,7 @@ module IRB
         :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
-        :RETURN => ObjectDisplay.new
+        :RETURN => SimpleDisplay.new
       },
       :DEFAULT => {
         :PROMPT_I => "%N(%m):%03n:%i> ",
@@ -108,7 +124,7 @@ module IRB
         :PROMPT_N => "%N(%m):%03n:%i> ",
         :PROMPT_S => "%N(%m):%03n:%i%l ",
         :PROMPT_C => "%N(%m):%03n:%i* ",
-        :RETURN => ObjectDisplay.new
+        :RETURN => SimpleDisplay.new
       },
       :SIMPLE => {
         :PROMPT_I => ">> ",
@@ -122,7 +138,7 @@ module IRB
         :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
-        :RETURN => ObjectDisplay.new,
+        :RETURN => SimpleDisplay.new,
         :AUTO_INDENT => true
       },
       :XMP => {
@@ -239,44 +255,20 @@ module IRB
     end
   end
 
-  IRBRC_EXT = "rc"
-  def IRB.rc_file(ext = IRBRC_EXT)
-    if !conf[:RC_NAME_GENERATOR]
-      rc_file_generators do |rcgen|
-        conf[:RC_NAME_GENERATOR] ||= rcgen
-        if File.exist?(rcgen.call(IRBRC_EXT))
-          conf[:RC_NAME_GENERATOR] = rcgen
-          break
-        end
-      end
-    end
-    conf[:RC_NAME_GENERATOR].call ext
-  end
+  def IRB.rc_file(ext = "rc")
+    possible = [".irb#{ext}", "_irb#{ext}", "$irb#{ext}", "irb.#{ext}"]
 
-  # enumerate possible rc-file base name generators
-  def IRB.rc_file_generators
-    if irbrc = ENV["IRBRC"]
-      yield proc{|rc|  rc == "rc" ? irbrc : irbrc+rc}
-    end
-    if home = ENV["HOME"]
-      yield proc{|rc| home+"/.irb#{rc}"}
-    end
-    home = Dir.pwd
-    yield proc{|rc| home+"/.irb#{rc}"}
-    yield proc{|rc| home+"/irb#{rc.sub(/\A_?/, '.')}"}
-    yield proc{|rc| home+"/_irb#{rc}"}
-    yield proc{|rc| home+"/$irb#{rc}"}
-  end
-
-  # loading modules
-  def IRB.load_modules
-    for m in conf[:LOAD_MODULES]
-      begin
-        require m
-      rescue
-        print $@[0], ":", $!.class, ": ", $!, "\n"
+    possible.each do |file|
+      if home = ENV["HOME"]
+        home_file = File.join(home, file)
+        return home_file if File.exist?(home_file)
       end
+
+      pwd_file = File.join(Dir.pwd, file)
+      return pwd_file if File.exist?(pwd_file)
     end
+
+    ""
   end
 
 end

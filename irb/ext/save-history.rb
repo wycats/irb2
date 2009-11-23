@@ -1,10 +1,10 @@
 #!/usr/local/bin/ruby
 #
 #   save-history.rb - 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
-#   	by Keiju ISHITSUKAkeiju@ruby-lang.org)
+#       $Release Version: 0.9.5$
+#       $Revision: 11708 $
+#       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#       by Keiju ISHITSUKAkeiju@ruby-lang.org)
 #
 # --
 #
@@ -21,7 +21,7 @@ module IRB
   class Context
     def init_save_history
       unless (class<<@io;self;end).include?(HistorySavingAbility)
-	@io.extend(HistorySavingAbility)
+        @io.extend(HistorySavingAbility)
       end
     end
 
@@ -31,7 +31,7 @@ module IRB
 
     def save_history=(val)
       IRB.conf[:SAVE_HISTORY] = val
-      context = current_context || self
+      context = IRB.current_context || self
       context.init_save_history if val
     end
 
@@ -49,16 +49,16 @@ module IRB
 
     def HistorySavingAbility.create_finalizer
       proc do
-	if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
-	  if hf = IRB.conf[:HISTORY_FILE]
-	    file = File.expand_path(hf)
-	  end
-	  file = IRB.rc_file("_history") unless file
-	  open(file, 'w' ) do |f|
-	    hist = HISTORY.to_a
-	    f.puts(hist[-num..-1] || hist)
-	  end
-	end
+        if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
+          if hf = IRB.conf[:HISTORY_FILE]
+            file = File.expand_path(hf)
+          end
+          file = IRB.rc_file("_history") unless file
+          open(file, 'w' ) do |f|
+            hist = HISTORY.to_a
+            f.puts(hist[-num..-1] || hist)
+          end
+        end
       end
     end
 
@@ -72,9 +72,9 @@ module IRB
       hist = IRB.conf[:HISTORY_FILE]
       hist = IRB.rc_file("_history") unless hist
       if File.exist?(hist)
-	open(hist) do |f|
-	  f.each {|l| HISTORY << l.chomp}
-	end
+        open(hist) do |f|
+          f.each {|l| HISTORY << l.chomp}
+        end
       end
     end
   end

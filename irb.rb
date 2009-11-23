@@ -17,15 +17,27 @@ require "irb/extend-command"
 require "irb/ruby-lex"
 require "irb/input-method"
 require "irb/locale"
+require "irb/colorize"
 
 STDOUT.sync = true
 
 module IRB
   class Abort < Exception; end
+  class CommandResult
+    def self.===(other)
+      other == self || other.kind_of?(IRB::Irb)
+    end
+  end
 
   class << self
     attr_reader   :conf
     attr_accessor :main_context
+
+    def pause
+      sleep
+      STDOUT.flush
+      STDERR.flush
+    end
 
     def version
       @version ||= begin
@@ -43,6 +55,8 @@ module IRB
       irb = Irb.new(nil, conf[:SCRIPT])
 
       self.main_context = irb.context
+
+      require "irb/ext/multi-irb"
 
       trap("SIGINT") { irb.signal_handle }
       catch(:irb_exit) { irb.eval_input }
@@ -74,6 +88,7 @@ module IRB
 
       @scanner = RubyLex.new
       @scanner.exception_on_syntax_error = false
+      @stdout = STDOUT
     end
 
     attr_reader :context
@@ -101,8 +116,6 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no|
         with_signal_status(:IN_EVAL) do
           begin
-            # TODO: Why?
-            line.untaint
             @context.evaluate(line, line_no)
           rescue Interrupt => e
             handle_exception(e)
@@ -110,10 +123,6 @@ module IRB
             raise
           rescue Exception => e
             handle_exception(e)
-          end
-
-          if $SAFE > 2
-            abort "Error: irb does not work for $SAFE level higher than 2"
           end
         end
       end
@@ -126,16 +135,15 @@ module IRB
     end
 
     def signal_handle
-      context.handle_sigint
-
       case @signal_status
       when :IN_INPUT
-        print "^C\n"
+        puts "^C"
         raise RubyLex::TerminateLineInput
       when :IN_EVAL
         IRB.irb_abort(self)
       when :IN_LOAD
-        print "\nabort!!\n" if @context.verbose?IRB.irb_abort(self, LoadAbort)
+        puts "\nabort!!" if @context.verbose?
+        IRB.irb_abort(self, LoadAbort)
       when :IN_IRB
         # ignore
       else
@@ -151,7 +159,7 @@ module IRB
       begin
         yield
       ensure
-        @signal_status = old_signal_status
+        @signal_status = old_signal_status if $SAFE.zero?
       end
     end
 
