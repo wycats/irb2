@@ -56,6 +56,9 @@ module IRB
 
       self.main_context = irb.context
 
+      # TODO: Move into history module
+      main_context.save_history = conf[:SAVE_HISTORY]
+
       require "irb/ext/multi-irb"
 
       trap("SIGINT") { irb.signal_handle }

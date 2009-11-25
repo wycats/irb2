@@ -65,7 +65,6 @@ module IRB
       else
         @io = input_method
       end
-      self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
 
       if output_method
         @output_method = output_method
@@ -138,7 +137,7 @@ module IRB
     end
 
     def irb_name
-      @irb_name ||= "irb" + IRB.job_manager.current_job_ixZd
+      @irb_name ||= "irb" + IRB.job_manager.current_job_id
     end
 
     def irb_path

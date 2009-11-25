@@ -1,9 +1,9 @@
 #
 #   change-ws.rb - 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.9.5$
+#       $Revision: 11708 $
+#       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -17,21 +17,24 @@ module IRB
   module ExtendCommand
     class Workspaces<Nop
       def execute(*obj)
-	irb_context.workspaces.collect{|ws| ws.main}
+        workspaces = irb_context.workspaces.map {|w| w.main.inspect} + ["[green]#{irb_context.main.inspect}[/]"]
+        puts IRB.colorize("[blue]Workspaces\n----------[/]\n" <<
+             workspaces.join("\n"))
+        IRB::CommandResult
       end
     end
 
     class PushWorkspace<Workspaces
       def execute(*obj)
-	irb_context.push_workspace(*obj)
-	super
+        irb_context.push_workspace(*obj)
+        super
       end
     end
 
     class PopWorkspace<Workspaces
       def execute(*obj)
-	irb_context.pop_workspace(*obj)
-	super
+        irb_context.pop_workspace(*obj)
+        super
       end
     end
   end

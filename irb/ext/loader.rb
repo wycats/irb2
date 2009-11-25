@@ -90,14 +90,14 @@ module IRB
 
     def search_file_from_ruby_path(fn)
       if /^#{Regexp.quote(File::Separator)}/ =~ fn
-	return fn if File.exist?(fn)
-	return nil
+        return fn if File.exist?(fn)
+        return nil
       end
 
       for path in $:
-	if File.exist?(f = File.join(path, fn))
-	  return f
-	end
+        if File.exist?(f = File.join(path, fn))
+          return f
+        end
       end
       return nil
     end
@@ -122,27 +122,26 @@ module IRB
 
     def load_file(path, priv = nil)
       irb.with_path(path, File.basename(path)) do
-
-      if priv
-        ws = WorkSpace.new(Module.new)
-      else
-        ws = WorkSpace.new
-      end
-      irb.with_workspace(ws) do
-        irb.with_input_method(FileInputMethod.new(path)) do |io|
-          irb.with_signal_status(:IN_LOAD) do
-            if old_io.kind_of?(FileInputMethod)
-              irb.eval_input
-                  else
-              begin
+        if priv
+          ws = WorkSpace.new(Module.new)
+        else
+          ws = WorkSpace.new
+        end
+        irb.with_workspace(ws) do
+          irb.with_input_method(FileInputMethod.new(path)) do |io|
+            irb.with_signal_status(:IN_LOAD) do
+              if old_io.kind_of?(FileInputMethod)
                 irb.eval_input
-              rescue LoadAbort
-                print "load abort!!\n"
+              else
+                begin
+                  irb.eval_input
+                rescue LoadAbort
+                  print "load abort!!\n"
+                end
               end
             end
           end
         end
-      end
       end
     end
 

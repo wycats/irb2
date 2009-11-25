@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 #
-#   save-history.rb - 
+#   save-history.rb -
 #       $Release Version: 0.9.5$
 #       $Revision: 11708 $
 #       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
@@ -8,10 +8,11 @@
 #
 # --
 #
-#   
+#
 #
 
 require "readline"
+require "pathname"
 
 module IRB
   module HistorySavingAbility
@@ -20,9 +21,7 @@ module IRB
 
   class Context
     def init_save_history
-      unless (class<<@io;self;end).include?(HistorySavingAbility)
-        @io.extend(HistorySavingAbility)
-      end
+      HistorySavingAbility.load_history
     end
 
     def save_history
@@ -35,48 +34,30 @@ module IRB
       context.init_save_history if val
     end
 
-    def history_file
-      IRB.conf[:HISTORY_FILE]
-    end
-
-    def history_file=(hist)
-      IRB.conf[:HISTORY_FILE] = hist
-    end
+    attr_accessor :history_file
   end
 
   module HistorySavingAbility
     include Readline
 
-    def HistorySavingAbility.create_finalizer
-      proc do
-        if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
-          if hf = IRB.conf[:HISTORY_FILE]
-            file = File.expand_path(hf)
-          end
-          file = IRB.rc_file("_history") unless file
-          open(file, 'w' ) do |f|
-            hist = HISTORY.to_a
-            f.puts(hist[-num..-1] || hist)
-          end
+    at_exit do
+      if (num = IRB.conf[:SAVE_HISTORY].to_i) > 0
+        File.open(history_file, 'w') do |f|
+          f.puts HISTORY.to_a.last(num).join("\n")
         end
       end
     end
 
-    def HistorySavingAbility.extended(obj)
-      ObjectSpace.define_finalizer(obj, HistorySavingAbility.create_finalizer)
-      obj.load_history
-      obj
+    def self.history_file
+      config = IRB.main_context.history_file
+      config ? Pathname.new(config) : IRB.rc_file("_history")
     end
 
-    def load_history
-      hist = IRB.conf[:HISTORY_FILE]
-      hist = IRB.rc_file("_history") unless hist
-      if File.exist?(hist)
-        open(hist) do |f|
-          f.each {|l| HISTORY << l.chomp}
-        end
+    def self.load_history
+      hist = history_file
+      if hist.exist?
+        File.open(hist).each_line {|l| HISTORY << l.chomp }
       end
     end
   end
 end
-

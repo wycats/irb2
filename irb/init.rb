@@ -10,6 +10,8 @@
 #
 #
 
+require "pathname"
+
 module IRB
 
   # initialize config
@@ -258,17 +260,14 @@ module IRB
   def IRB.rc_file(ext = "rc")
     possible = [".irb#{ext}", "_irb#{ext}", "$irb#{ext}", "irb.#{ext}"]
 
-    possible.each do |file|
-      if home = ENV["HOME"]
-        home_file = File.join(home, file)
-        return home_file if File.exist?(home_file)
-      end
+    base = Pathname.new(ENV["HOME"] || Dir.pwd)
 
-      pwd_file = File.join(Dir.pwd, file)
-      return pwd_file if File.exist?(pwd_file)
+    possible.each do |file|
+      check = base.join(file)
+      return check if check.exist?
     end
 
-    ""
+    return base.join(".irb#{ext}")
   end
 
 end

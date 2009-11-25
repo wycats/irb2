@@ -93,7 +93,7 @@ module IRB
 
       def gets
         if l = readline(@prompt, false)
-          HISTORY.push(l) if !l.empty?
+          HISTORY.push(l) unless l.empty?
           @line[@line_no += 1] = l + "\n"
         else
           @eof = true

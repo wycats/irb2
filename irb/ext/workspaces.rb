@@ -1,13 +1,13 @@
 #
-#   push-ws.rb - 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#   push-ws.rb -
+#       $Release Version: 0.9.5$
+#       $Revision: 11708 $
+#       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 
 module IRB
@@ -18,37 +18,26 @@ module IRB
     end
 
     def workspaces
-      if defined? @workspaces
-	@workspaces
-      else
-	@workspaces = []
-      end
+      @workspaces ||= []
     end
 
-    def push_workspace(*_main)
-      if _main.empty?
-	if workspaces.empty?
-	  print "No other workspace\n"
-	  return nil
-	end
-	ws = workspaces.pop
-	workspaces.push @workspace
-	@workspace = ws
-	return workspaces
+    def push_workspace(_main = nil)
+      unless main
+        puts "[red]Please specify a workspace to push[/]"
+        return
       end
 
       workspaces.push @workspace
-      @workspace = WorkSpace.new(@workspace.binding, _main[0])
-      if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
-	main.extend ExtendCommandBundle
-      end
+      @workspace = WorkSpace.new(@workspace.binding, _main)
+      main.extend ExtendCommandBundle
     end
 
     def pop_workspace
       if workspaces.empty?
-	print "workspace stack empty\n"
-	return
+        puts "[red]No workspaces to pop[/]"
+        return
       end
+
       @workspace = workspaces.pop
     end
   end

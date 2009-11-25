@@ -116,8 +116,7 @@ module IRB
         @jobs[key] = nil
       else
         catch(:EXISTS) do
-          @jobs.each_index do
-            |i|
+          @jobs.each_index do |i|
             if @jobs[i] and (@jobs[i][0] == key ||
                              @jobs[i][1] == key ||
                              @jobs[i][1].context.main.equal?(key))
