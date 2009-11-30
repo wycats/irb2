@@ -93,7 +93,6 @@ class RubyLex
 
   def getc
     while @rests.empty?
-#      return nil unless buf_input
       @rests.push nil unless buf_input
     end
     c = @rests.shift
@@ -235,7 +234,6 @@ class RubyLex
           unless l = lex
             throw :TERM_INPUT if @line == ''
           else
-            #p l
             @line.concat l
             if @ltype or @continue or @indent > 0
               next
@@ -284,8 +282,6 @@ class RubyLex
   end
 
   def token
-    #      require "tracer"
-    #      Tracer.on
     @prev_seek = @seek
     @prev_line_no = @line_no
     @prev_char_no = @char_no
@@ -301,7 +297,6 @@ class RubyLex
     if @readed_auto_clean_up
       get_readed
     end
-    #      Tracer.off
     tk
   end
 
@@ -502,12 +497,12 @@ class RubyLex
       catch(:RET) do
         if @lex_state == EXPR_ARG
           if @space_seen and peek(0) =~ /[0-9]/
-            throw :RET, identify_number
+            throw :RET, identify_number(op)
           else
             @lex_state = EXPR_BEG
           end
         elsif @lex_state != EXPR_END and peek(0) =~ /[0-9]/
-          throw :RET, identify_number
+          throw :RET, identify_number(op)
         else
           @lex_state = EXPR_BEG
         end
@@ -559,7 +554,6 @@ class RubyLex
 
     @OP.def_rule("::") do
        |op, io|
-#      p @lex_state.id2name, @space_seen
       if @lex_state == EXPR_BEG or @lex_state == EXPR_ARG && @space_seen
         @lex_state = EXPR_BEG
         Token(TkCOLON3)
@@ -590,11 +584,6 @@ class RubyLex
       @lex_state = EXPR_BEG
       Token("^")
     end
-
-    #       @OP.def_rules("^=") do
-    #   @lex_state = EXPR_BEG
-    #   Token(OP_ASGN, :^)
-    #       end
 
     @OP.def_rules(",") do
       |op, io|
@@ -725,16 +714,6 @@ class RubyLex
       end
     end
 
-    #       @OP.def_rule("def", proc{|op, io| /\s/ =~ io.peek(0)}) do
-    #   |op, io|
-    #   @indent += 1
-    #   @lex_state = EXPR_FNAME
-    # # @lex_state = EXPR_END
-    # # until @rests[0] == "\n" or @rests[0] == ";"
-    # #   rests.shift
-    # # end
-    #       end
-
     @OP.def_rule("") do
       |op, io|
       printf "MATCH: start %s: %s\n", op, io.inspect if RubyLex.debug?
@@ -847,7 +826,6 @@ class RubyLex
                   @indent += 1
                   @indent_stack.push token_c
                 end
-#               p @indent_stack
               end
 
             elsif DEINDENT_CLAUSE.include?(token)
@@ -885,7 +863,6 @@ class RubyLex
 
   def identify_here_document
     ch = getc
-#    if lt = PERCENT_LTYPE[ch]
     if ch == "-"
       ch = getc
       indent = true
@@ -944,44 +921,46 @@ class RubyLex
     else
       RubyLex.fail SyntaxError, "unknown type of %string"
     end
-#     if ch !~ /\W/
-#       ungetc
-#       next
-#     end
-    #@ltype = lt
     @quoted = ch unless @quoted = PERCENT_PAREN[ch]
     identify_string(lt, @quoted)
   end
 
-  def identify_number
+  def identify_number(op = "")
     @lex_state = EXPR_END
 
+    value = op
+
     if peek(0) == "0" && peek(1) !~ /[.eE]/
-      getc
-      case peek(0)
+      value << getc
+      case next_peek = peek(0)
       when /[xX]/
         ch = getc
+        value << ch
         match = /[0-9a-fA-F_]/
       when /[bB]/
         ch = getc
+        value << ch
         match = /[01_]/
       when /[oO]/
         ch = getc
+        value << ch
         match = /[0-7_]/
       when /[dD]/
         ch = getc
+        value << ch
         match = /[0-9_]/
       when /[0-7]/
         match = /[0-7_]/
       when /[89]/
         RubyLex.fail SyntaxError, "Illegal octal digit"
       else
-        return Token(TkINTEGER)
+        return Token(TkINTEGER, value)
       end
 
       len0 = true
       non_digit = false
       while ch = getc
+        value << ch
         if match =~ ch
           if ch == "_"
             if non_digit
@@ -1004,7 +983,7 @@ class RubyLex
           break
         end
       end
-      return Token(TkINTEGER)
+      return Token(TkINTEGER, value)
     end
 
     type = TkINTEGER
@@ -1012,6 +991,7 @@ class RubyLex
     allow_e = true
     non_digit = false
     while ch = getc
+      value << ch
       case ch
       when /[0-9]/
         non_digit = false
@@ -1034,7 +1014,7 @@ class RubyLex
         end
         type = TkFLOAT
         if peek(0) =~ /[+-]/
-          getc
+          value << getc
         end
         allow_e = false
         allow_point = false
@@ -1047,7 +1027,7 @@ class RubyLex
         break
       end
     end
-    Token(type)
+    Token(type, value)
   end
 
   def identify_string(ltype, quoted = ltype)
@@ -1092,17 +1072,17 @@ class RubyLex
   def identify_comment
     @ltype = "#"
 
+    val = ""
+
     while ch = getc
-#      if ch == "\\" #"
-#       read_escape
-#      end
       if ch == "\n"
         @ltype = nil
         ungetc
         break
       end
+      val << ch
     end
-    return Token(TkCOMMENT)
+    return Token(TkCOMMENT, val)
   end
 
   def read_escape

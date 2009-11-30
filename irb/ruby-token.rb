@@ -18,35 +18,32 @@ module RubyToken
   EXPR_DOT = :EXPR_DOT
   EXPR_CLASS = :EXPR_CLASS
 
-  # for ruby 1.4X
-  if !defined?(Symbol)
-    Symbol = Integer
-  end
-
   class Token
-    def initialize(seek, line_no, char_no)
+    def initialize(seek, line_no, char_no, value = nil)
       @seek = seek
       @line_no = line_no
       @char_no = char_no
     end
 
     def to_s
-      vars = instance_variables - [:@seek, :@line_no, :@char_no]
-      details = vars.map {|v| "#{v}:#{instance_variable_get(v)}" }.join(" ")
+      vars = instance_variables - [:@seek, :@line_no, :@char_no, "@seek", "@line_no", "@char_no"]
+      details = vars.map {|v| "#{v.to_s.sub(/^@/, '')}:#{instance_variable_get(v)}" }.join(" ")
       "#{self.class.name} #{line_no}:#{char_no} #{details}"
     end
     alias inspect to_s
 
-    attr :seek
-    attr :line_no
-    attr :char_no
+    attr_reader :seek, :line_no, :char_no
+  end
+
+  class TkContents < Token
+    def initialize(seek, line_no, char_no, contents)
+      super(seek, line_no, char_no)
+      @contents = contents
+    end
+    attr_reader :contents
   end
 
   class TkNode < Token
-    def initialize(seek, line_no, char_no)
-      super
-    end
-    attr :node
   end
 
   class TkId < Token
@@ -54,7 +51,7 @@ module RubyToken
       super(seek, line_no, char_no)
       @name = name
     end
-    attr :name
+    attr_reader :name
   end
 
   class TkVal < Token
@@ -66,7 +63,7 @@ module RubyToken
   end
 
   class TkOp < Token
-    attr :name, true
+    attr_accessor :name
   end
 
   class TkOPASGN < TkOp
@@ -75,13 +72,13 @@ module RubyToken
       op = TkReading2Token[op][0] unless op.kind_of?(Symbol)
       @op = op
     end
-    attr :op
+    attr_reader :op
   end
 
   class TkUnknownChar < Token
     def initialize(seek, line_no, char_no, id)
       super(seek, line_no, char_no)
-      @name = name
+      @name = id
     end
     attr :name
   end
@@ -106,11 +103,7 @@ module RubyToken
       end
       return Token(tk[0], value)
     else
-      if (token.ancestors & [TkId, TkVal, TkOPASGN, TkUnknownChar]).empty?
-        token.new(@prev_seek, @prev_line_no, @prev_char_no)
-      else
-        token.new(@prev_seek, @prev_line_no, @prev_char_no, value)
-      end
+      token.new(@prev_seek, @prev_line_no, @prev_char_no, value)
     end
   end
 
@@ -201,7 +194,6 @@ module RubyToken
     [:TkRSHFT,      TkOp,   ">>"],
     [:TkCOLON2,     TkOp],
     [:TkCOLON3,     TkOp],
-#   [:OPASGN,       TkOp],               # +=, -=  etc. #
     [:TkASSOC,      TkOp,   "=>"],
     [:TkQUESTION,   TkOp,   "?"],        #?
     [:TkCOLON,      TkOp,   ":"],        #:
@@ -239,7 +231,7 @@ module RubyToken
     [:TkCOMMA,      Token,  ","],
     [:TkSEMICOLON,  Token,  ";"],
 
-    [:TkCOMMENT],
+    [:TkCOMMENT,    TkContents],
     [:TkRD_COMMENT],
     [:TkSPACE],
     [:TkNL],
@@ -255,27 +247,13 @@ module RubyToken
   TkReading2Token = {}
   TkSymbol2Token = {}
 
-  def RubyToken.def_token(token_n, super_token = Token, reading = nil, *opts)
-    token_n = token_n.id2name if token_n.kind_of?(Symbol)
-    if RubyToken.const_defined?(token_n)
-      IRB.fail AlreadyDefinedToken, token_n
-    end
-    token_c = eval("class #{token_n} < #{super_token}; end; #{token_n}")
-
-    if reading
-      if TkReading2Token[reading]
-        IRB.fail TkReading2TokenDuplicateError, token_n, reading
-      end
-      if opts.empty?
-        TkReading2Token[reading] = [token_c]
-      else
-        TkReading2Token[reading] = [token_c].concat(opts)
-      end
-    end
-    TkSymbol2Token[token_n.intern] = token_c
+  def self.def_token(token_n, super_token = Token, reading = nil, *opts)
+    token_c = const_set(token_n, Class.new(super_token))
+    TkReading2Token[reading] = [token_c].concat(opts) if reading
+    TkSymbol2Token[token_n] = token_c
   end
 
-  for defs in TokenDefinitions
+  TokenDefinitions.each do |defs|
     def_token(*defs)
   end
 end
