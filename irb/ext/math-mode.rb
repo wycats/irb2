@@ -1,9 +1,9 @@
 #
 #   math-mode.rb - 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.9.5$
+#       $Revision: 11708 $
+#       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -18,14 +18,14 @@ module IRB
 
     def math_mode=(opt)
       if @math_mode == true && opt == false
-	IRB.fail CantReturnToNormalMode
-	return
+        IRB.fail CantReturnToNormalMode
+        return
       end
 
       @math_mode = opt
       if math_mode
-	main.extend Math
-	print "start math mode\n" if verbose?
+        main.extend Math
+        print "start math mode\n" if verbose?
       end
     end
 

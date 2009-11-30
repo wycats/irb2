@@ -1,9 +1,5 @@
 module IRB
-  def self.colorize(str)
-    ColoredString.new(str)
-  end
-
-  class ColoredString
+  class ColoredShellString
     COLORS = {
       :"\\/"        => '0;0',
       :nothing      => '0;0',

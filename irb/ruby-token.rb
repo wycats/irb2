@@ -1,13 +1,13 @@
 #
-#   irb/ruby-token.rb - ruby tokens 
-#   	$Release Version: 0.9.5$
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#   irb/ruby-token.rb - ruby tokens
+#       $Release Version: 0.9.5$
+#       $Revision: 11708 $
+#       $Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 module RubyToken
   EXPR_BEG = :EXPR_BEG
@@ -22,13 +22,21 @@ module RubyToken
   if !defined?(Symbol)
     Symbol = Integer
   end
-  
+
   class Token
     def initialize(seek, line_no, char_no)
       @seek = seek
       @line_no = line_no
       @char_no = char_no
     end
+
+    def to_s
+      vars = instance_variables - [:@seek, :@line_no, :@char_no]
+      details = vars.map {|v| "#{v}:#{instance_variable_get(v)}" }.join(" ")
+      "#{self.class.name} #{line_no}:#{char_no} #{details}"
+    end
+    alias inspect to_s
+
     attr :seek
     attr :line_no
     attr :char_no
@@ -85,23 +93,23 @@ module RubyToken
     case token
     when String
       if (tk = TkReading2Token[token]).nil?
-	IRB.fail TkReading2TokenNoKey, token
+        IRB.fail TkReading2TokenNoKey, token
       end
-      tk = Token(tk[0], value) 
+      tk = Token(tk[0], value)
       if tk.kind_of?(TkOp)
-	tk.name = token
+        tk.name = token
       end
       return tk
     when Symbol
       if (tk = TkSymbol2Token[token]).nil?
-	IRB.fail TkSymbol2TokenNoKey, token
+        IRB.fail TkSymbol2TokenNoKey, token
       end
-      return Token(tk[0], value) 
-    else 
+      return Token(tk[0], value)
+    else
       if (token.ancestors & [TkId, TkVal, TkOPASGN, TkUnknownChar]).empty?
-	token.new(@prev_seek, @prev_line_no, @prev_char_no)
+        token.new(@prev_seek, @prev_line_no, @prev_char_no)
       else
-	token.new(@prev_seek, @prev_line_no, @prev_char_no, value)
+        token.new(@prev_seek, @prev_line_no, @prev_char_no, value)
       end
     end
   end
@@ -109,38 +117,38 @@ module RubyToken
   TokenDefinitions = [
     [:TkCLASS,      TkId,  "class",  EXPR_CLASS],
     [:TkMODULE,     TkId,  "module", EXPR_BEG],
-    [:TkDEF,	    TkId,  "def",    EXPR_FNAME],
+    [:TkDEF,        TkId,  "def",    EXPR_FNAME],
     [:TkUNDEF,      TkId,  "undef",  EXPR_FNAME],
     [:TkBEGIN,      TkId,  "begin",  EXPR_BEG],
     [:TkRESCUE,     TkId,  "rescue", EXPR_MID],
     [:TkENSURE,     TkId,  "ensure", EXPR_BEG],
-    [:TkEND,	    TkId,  "end",    EXPR_END],
+    [:TkEND,        TkId,  "end",    EXPR_END],
     [:TkIF,         TkId,  "if",     EXPR_BEG, :TkIF_MOD],
     [:TkUNLESS,     TkId,  "unless", EXPR_BEG, :TkUNLESS_MOD],
-    [:TkTHEN,	    TkId,  "then",   EXPR_BEG],
+    [:TkTHEN,       TkId,  "then",   EXPR_BEG],
     [:TkELSIF,      TkId,  "elsif",  EXPR_BEG],
-    [:TkELSE,	    TkId,  "else",   EXPR_BEG],
-    [:TkCASE,	    TkId,  "case",   EXPR_BEG],
-    [:TkWHEN,	    TkId,  "when",   EXPR_BEG],
+    [:TkELSE,       TkId,  "else",   EXPR_BEG],
+    [:TkCASE,       TkId,  "case",   EXPR_BEG],
+    [:TkWHEN,       TkId,  "when",   EXPR_BEG],
     [:TkWHILE,      TkId,  "while",  EXPR_BEG, :TkWHILE_MOD],
     [:TkUNTIL,      TkId,  "until",  EXPR_BEG, :TkUNTIL_MOD],
-    [:TkFOR,	    TkId,  "for",    EXPR_BEG],
+    [:TkFOR,        TkId,  "for",    EXPR_BEG],
     [:TkBREAK,      TkId,  "break",  EXPR_END],
-    [:TkNEXT,	    TkId,  "next",   EXPR_END],
-    [:TkREDO,	    TkId,  "redo",   EXPR_END],
+    [:TkNEXT,       TkId,  "next",   EXPR_END],
+    [:TkREDO,       TkId,  "redo",   EXPR_END],
     [:TkRETRY,      TkId,  "retry",  EXPR_END],
-    [:TkIN,	    TkId,  "in",     EXPR_BEG],
-    [:TkDO,	    TkId,  "do",     EXPR_BEG],
+    [:TkIN,         TkId,  "in",     EXPR_BEG],
+    [:TkDO,         TkId,  "do",     EXPR_BEG],
     [:TkRETURN,     TkId,  "return", EXPR_MID],
     [:TkYIELD,      TkId,  "yield",  EXPR_END],
     [:TkSUPER,      TkId,  "super",  EXPR_END],
-    [:TkSELF,	    TkId,  "self",   EXPR_END],
-    [:TkNIL, 	    TkId,  "nil",    EXPR_END],
-    [:TkTRUE,	    TkId,  "true",   EXPR_END],
+    [:TkSELF,       TkId,  "self",   EXPR_END],
+    [:TkNIL,        TkId,  "nil",    EXPR_END],
+    [:TkTRUE,       TkId,  "true",   EXPR_END],
     [:TkFALSE,      TkId,  "false",  EXPR_END],
-    [:TkAND,	    TkId,  "and",    EXPR_BEG],
-    [:TkOR, 	    TkId,  "or",     EXPR_BEG],
-    [:TkNOT,	    TkId,  "not",    EXPR_BEG],
+    [:TkAND,        TkId,  "and",    EXPR_BEG],
+    [:TkOR,         TkId,  "or",     EXPR_BEG],
+    [:TkNOT,        TkId,  "not",    EXPR_BEG],
     [:TkIF_MOD,     TkId],
     [:TkUNLESS_MOD, TkId],
     [:TkWHILE_MOD,  TkId],
@@ -148,15 +156,15 @@ module RubyToken
     [:TkALIAS,      TkId,  "alias",    EXPR_FNAME],
     [:TkDEFINED,    TkId,  "defined?", EXPR_END],
     [:TklBEGIN,     TkId,  "BEGIN",    EXPR_END],
-    [:TklEND,	    TkId,  "END",      EXPR_END],
+    [:TklEND,       TkId,  "END",      EXPR_END],
     [:Tk__LINE__,   TkId,  "__LINE__", EXPR_END],
     [:Tk__FILE__,   TkId,  "__FILE__", EXPR_END],
 
     [:TkIDENTIFIER, TkId],
-    [:TkFID,	    TkId],
-    [:TkGVAR,	    TkId],
-    [:TkCVAR,	    TkId],
-    [:TkIVAR,	    TkId],
+    [:TkFID,        TkId],
+    [:TkGVAR,       TkId],
+    [:TkCVAR,       TkId],
+    [:TkIVAR,       TkId],
     [:TkCONSTANT,   TkId],
 
     [:TkINTEGER,    TkVal],
@@ -174,30 +182,30 @@ module RubyToken
 
     [:TkUPLUS,      TkOp,   "+@"],
     [:TkUMINUS,     TkOp,   "-@"],
-    [:TkPOW,	    TkOp,   "**"],
-    [:TkCMP,	    TkOp,   "<=>"],
-    [:TkEQ,	    TkOp,   "=="],
-    [:TkEQQ,	    TkOp,   "==="],
-    [:TkNEQ,	    TkOp,   "!="],
-    [:TkGEQ,	    TkOp,   ">="],
-    [:TkLEQ,	    TkOp,   "<="],
+    [:TkPOW,        TkOp,   "**"],
+    [:TkCMP,        TkOp,   "<=>"],
+    [:TkEQ,         TkOp,   "=="],
+    [:TkEQQ,        TkOp,   "==="],
+    [:TkNEQ,        TkOp,   "!="],
+    [:TkGEQ,        TkOp,   ">="],
+    [:TkLEQ,        TkOp,   "<="],
     [:TkANDOP,      TkOp,   "&&"],
-    [:TkOROP,	    TkOp,   "||"],
+    [:TkOROP,       TkOp,   "||"],
     [:TkMATCH,      TkOp,   "=~"],
     [:TkNMATCH,     TkOp,   "!~"],
-    [:TkDOT2,	    TkOp,   ".."],
-    [:TkDOT3,	    TkOp,   "..."],
-    [:TkAREF,	    TkOp,   "[]"],
-    [:TkASET,	    TkOp,   "[]="],
+    [:TkDOT2,       TkOp,   ".."],
+    [:TkDOT3,       TkOp,   "..."],
+    [:TkAREF,       TkOp,   "[]"],
+    [:TkASET,       TkOp,   "[]="],
     [:TkLSHFT,      TkOp,   "<<"],
     [:TkRSHFT,      TkOp,   ">>"],
     [:TkCOLON2,     TkOp],
     [:TkCOLON3,     TkOp],
-#   [:OPASGN,	    TkOp],               # +=, -=  etc. #
+#   [:OPASGN,       TkOp],               # +=, -=  etc. #
     [:TkASSOC,      TkOp,   "=>"],
-    [:TkQUESTION,   TkOp,   "?"],	 #?
+    [:TkQUESTION,   TkOp,   "?"],        #?
     [:TkCOLON,      TkOp,   ":"],        #:
-    
+
     [:TkfLPAREN],         # func( #
     [:TkfLBRACK],         # func[ #
     [:TkfLBRACE],         # func{ #
@@ -205,13 +213,13 @@ module RubyToken
     [:TkAMPER],           # &arg #
     [:TkSYMBEG],          # :SYMBOL
 
-    [:TkGT,	    TkOp,   ">"],
-    [:TkLT,	    TkOp,   "<"],
-    [:TkPLUS,	    TkOp,   "+"],
+    [:TkGT,         TkOp,   ">"],
+    [:TkLT,         TkOp,   "<"],
+    [:TkPLUS,       TkOp,   "+"],
     [:TkMINUS,      TkOp,   "-"],
-    [:TkMULT,	    TkOp,   "*"],
-    [:TkDIV,	    TkOp,   "/"],
-    [:TkMOD,	    TkOp,   "%"],
+    [:TkMULT,       TkOp,   "*"],
+    [:TkDIV,        TkOp,   "/"],
+    [:TkMOD,        TkOp,   "%"],
     [:TkBITOR,      TkOp,   "|"],
     [:TkBITXOR,     TkOp,   "^"],
     [:TkBITAND,     TkOp,   "&"],
@@ -221,7 +229,7 @@ module RubyToken
     [:TkBACKQUOTE,  TkOp,   "`"],
 
     [:TkASSIGN,     Token,  "="],
-    [:TkDOT,	    Token,  "."],
+    [:TkDOT,        Token,  "."],
     [:TkLPAREN,     Token,  "("],  #(exp)
     [:TkLBRACK,     Token,  "["],  #[arry]
     [:TkLBRACE,     Token,  "{"],  #{hash}
@@ -238,7 +246,7 @@ module RubyToken
     [:TkEND_OF_SCRIPT],
 
     [:TkBACKSLASH,  TkUnknownChar,  "\\"],
-    [:TkAT,	    TkUnknownChar,  "@"],
+    [:TkAT,         TkUnknownChar,  "@"],
     [:TkDOLLAR,     TkUnknownChar,  "$"],
   ]
 
@@ -253,15 +261,15 @@ module RubyToken
       IRB.fail AlreadyDefinedToken, token_n
     end
     token_c = eval("class #{token_n} < #{super_token}; end; #{token_n}")
-    
+
     if reading
       if TkReading2Token[reading]
-	IRB.fail TkReading2TokenDuplicateError, token_n, reading
+        IRB.fail TkReading2TokenDuplicateError, token_n, reading
       end
       if opts.empty?
-	TkReading2Token[reading] = [token_c]
+        TkReading2Token[reading] = [token_c]
       else
-	TkReading2Token[reading] = [token_c].concat(opts)
+        TkReading2Token[reading] = [token_c].concat(opts)
       end
     end
     TkSymbol2Token[token_n.intern] = token_c

@@ -16,8 +16,12 @@ require "irb/extend-command"
 
 require "irb/ruby-lex"
 require "irb/input-method"
+require "irb/output-method"
 require "irb/locale"
 require "irb/colorize"
+require "irb/proxy"
+require "pp"
+require "stringio"
 
 STDOUT.sync = true
 
@@ -32,6 +36,15 @@ module IRB
   class << self
     attr_reader   :conf
     attr_accessor :main_context
+
+    def puts(*args)
+      main_context.output_method.puts(*args)
+      nil
+    end
+
+    def p(arg)
+      puts arg.inspect
+    end
 
     def pause
       sleep
@@ -106,10 +119,10 @@ module IRB
 
       exc.backtrace.each do |line|
         line = @context.workspace.filter_backtrace(line) unless irb_bug
-        puts "\tfrom #{line}" if line
+        IRB.puts "\tfrom #{line}" if line
       end
 
-      puts "Maybe IRB bug!" if irb_bug
+      IRB.puts "Maybe IRB bug!" if irb_bug
     end
 
     def eval_input
@@ -140,12 +153,12 @@ module IRB
     def signal_handle
       case @signal_status
       when :IN_INPUT
-        puts "^C"
+        IRB.puts "^C"
         raise RubyLex::TerminateLineInput
       when :IN_EVAL
         IRB.irb_abort(self)
       when :IN_LOAD
-        puts "\nabort!!" if @context.verbose?
+        IRB.puts "\nabort!!" if @context.verbose?
         IRB.irb_abort(self, LoadAbort)
       when :IN_IRB
         # ignore

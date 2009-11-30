@@ -11,78 +11,32 @@
 #
 module IRB
   class WorkSpace
-    # create new workspace. set self to main if specified, otherwise
-    # inherit main from TOPLEVEL_BINDING.
-    def initialize(*main)
-      if main[0].kind_of?(Binding)
-        @binding = main.shift
-      elsif IRB.conf[:SINGLE_IRB]
-        @binding = TOPLEVEL_BINDING
-      else
-        case IRB.conf[:CONTEXT_MODE]
-        when 0  # binding in proc on TOPLEVEL_BINDING
-          @binding = eval("proc{binding}.call",
-                      TOPLEVEL_BINDING,
-                      __FILE__,
-                      __LINE__)
-        when 1  # binding in loaded file
-          require "tempfile"
-          f = Tempfile.open("irb-binding")
-          f.print <<EOF
-          $binding = binding
-EOF
-          f.close
-          load f.path
-          @binding = $binding
+    # create new workspace. If a main is specified, inherit its 'self'. Inherit
+    # the local variables from the binding.
+    def initialize(main = nil, binding = TOPLEVEL_BINDING)
+      @binding = binding
 
-        when 2  # binding in loaded file(thread use)
-          unless defined? BINDING_QUEUE
-            require "thread"
-
-            IRB.const_set("BINDING_QUEUE", SizedQueue.new(1))
-            Thread.abort_on_exception = true
-            Thread.start do
-              eval "require \"irb/ws-for-case-2\"", TOPLEVEL_BINDING, __FILE__, __LINE__
-            end
-            Thread.pass
-          end
-          @binding = BINDING_QUEUE.pop
-
-        when 3  # binging in function on TOPLEVEL_BINDING(default)
-          @binding = eval("def irb_binding; binding; end; irb_binding",
-                      TOPLEVEL_BINDING,
-                      __FILE__,
-                      __LINE__ - 3)
-        end
-      end
-      if main.empty?
+      if !main
         @main = eval("self", @binding)
       else
-        @main = main[0]
-        IRB.conf[:__MAIN__] = @main
-        case @main
-        when Module
-          @binding = eval("IRB.conf[:__MAIN__].module_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
-        else
-          begin
-            @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
-          rescue TypeError
-            IRB.fail CantChangeBinding, @main.inspect
-          end
-        end
+        $__irb_main__ = @main = IRB::Proxy.new(main)
+
+        # Get a binding that has the locals of the original binding, but the
+        # self bound to the new main instance
+        evaluate = "$__irb_main__.instance_eval('binding', '(irb_internal)')"
+        @binding = eval(evaluate, @binding)
       end
-      eval("_=nil", @binding)
+      eval("_ = nil", @binding)
     end
 
-    attr_reader :binding
-    attr_reader :main
+    attr_reader :binding, :main
 
     def evaluate(context, statements, file = __FILE__, line = __LINE__)
       value = eval(statements, @binding, file, line)
 
       if $SAFE > 0
         begin
-          puts "irb only works in $SAFE == 0"
+          IRB.puts "irb only works in $SAFE == 0"
         ensure
           raise SystemExit
         end
@@ -93,25 +47,7 @@ EOF
 
     # error message manipulator
     def filter_backtrace(bt)
-      case IRB.conf[:CONTEXT_MODE]
-      when 0
-        return nil if bt =~ /\(irb_local_binding\)/
-      when 1
-        if(bt =~ %r!/tmp/irb-binding! or
-           bt =~ %r!irb/.*\.rb! or
-           bt =~ /irb\.rb/)
-          return nil
-        end
-      when 2
-        return nil if bt =~ /irb\/.*\.rb/
-      when 3
-        return nil if bt =~ /irb\/.*\.rb/
-        bt.sub!(/:\s*in `irb_binding'/){""}
-      end
-      bt
-    end
-
-    def IRB.delete_caller
+      bt =~ %r{^\(irb_internal\)} ? nil : bt
     end
   end
 end

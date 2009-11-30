@@ -24,7 +24,7 @@ module IRB
 
     class Jobs < Nop
       def execute
-        puts IRB.job_manager.inspect
+        IRB.p IRB.job_manager
         IRB::CommandResult
       end
     end
@@ -32,8 +32,8 @@ module IRB
     class Foreground < Nop
       def execute(key = nil)
         unless key
-          puts IRB.colorize("[red]You need to specify a job to foreground[/]")
-          puts
+          IRB.puts "[red]You need to specify a job to foreground[/]"
+          IRB.puts
           IRB.job_manager.display_jobs
           return IRB::CommandResult
         end

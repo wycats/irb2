@@ -17,14 +17,10 @@ module IRB
       @home_workspace ||= @workspace
     end
 
-    def change_workspace(_main = nil)
-      unless _main
-        @workspace = home_workspace
-        return main
-      end
-
-      @workspace = WorkSpace.new(_main)
-      @workspace.main.extend ExtendCommandBundle
+    def change_workspace(_main = home_workspace)
+      home_workspace
+      @workspace = _main.is_a?(WorkSpace) ? _main : WorkSpace.new(_main)
+      main
     end
   end
 end

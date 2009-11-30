@@ -32,8 +32,8 @@ module IRB
     end
 
     def display_jobs
-      puts "Jobs:"
-      puts inspect
+      IRB.puts "Jobs:"
+      IRB.p self
     end
 
     def n_jobs
@@ -56,18 +56,18 @@ module IRB
       th, irb = search(key)
 
       unless th
-        puts IRB.colorize("[red]Invalid job[/] ([blue]#{key}[/])")
-        puts
+        IRB.puts "[red]Invalid job[/] ([blue]#{key}[/])"
+        IRB.puts
         IRB.job_manager.display_jobs
         return
       end
 
       unless th.alive?
-        puts IRB.colorize("[red]That job is already dead[/]")
+        IRB.puts "[red]That job is already dead[/]"
       end
 
       if th == Thread.current
-        puts IRB.colorize("[red]You are already on job #{key}[/]")
+        IRB.puts "[red]You are already on job #{key}[/]"
         return
       end
 
@@ -86,7 +86,7 @@ module IRB
       for key in keys
         th, irb = search(key)
 
-        delete(th)
+        delete(irb)
 
         IRB.fail IrbAlreadyDead unless th.alive?
         th.kill
@@ -115,20 +115,15 @@ module IRB
         IRB.fail NoSuchJob, key unless @jobs[key]
         @jobs[key] = nil
       else
-        catch(:EXISTS) do
-          @jobs.each_index do |i|
-            if @jobs[i] and (@jobs[i][0] == key ||
-                             @jobs[i][1] == key ||
-                             @jobs[i][1].context.main.equal?(key))
-              @jobs[i] = nil
-              throw :EXISTS
-            end
+        result = @jobs.each_with_index do |job, idx|
+          if job and job[1] == key
+            @jobs[idx] = nil
+            break :EXISTS
           end
-          IRB.fail NoSuchJob, key
         end
+        IRB.fail NoSuchJob, key unless result == :EXISTS
       end
-      until assoc = @jobs.pop; end unless @jobs.empty?
-      @jobs.push assoc
+      @jobs.pop until @jobs.last || @jobs.empty?
     end
 
     def inspect
@@ -149,7 +144,7 @@ module IRB
         str = format("[blue]#%d[/] [#{status}]%s[/] | locals: %s",
                      i, irb.context.main, locals)
 
-        ary.push IRB.colorize(str)
+        ary.push str
       end
       ary.join("\n")
     end

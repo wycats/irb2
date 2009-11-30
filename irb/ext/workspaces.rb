@@ -22,19 +22,19 @@ module IRB
     end
 
     def push_workspace(_main = nil)
-      unless main
-        puts "[red]Please specify a workspace to push[/]"
+      unless _main
+        IRB.puts "[red]Please specify a workspace to push[/]\n"
         return
       end
 
       workspaces.push @workspace
-      @workspace = WorkSpace.new(@workspace.binding, _main)
+      @workspace = WorkSpace.new(_main, @workspace.binding)
       main.extend ExtendCommandBundle
     end
 
     def pop_workspace
       if workspaces.empty?
-        puts "[red]No workspaces to pop[/]"
+        IRB.puts "[red]No workspaces to pop[/]\n\n"
         return
       end
 

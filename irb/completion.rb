@@ -38,7 +38,7 @@ module IRB
       bind = IRB.current_context.workspace.binding
 
       case input
-      when /^(\/[^\/]*\/)\.([^.]*)$/
+      when %r{^(/[^/]*/)\.([^.]*)$}
         # Regexp
         receiver = $1
         message = Regexp.quote($2)
@@ -64,13 +64,7 @@ module IRB
 
       when /^(:[^:.]*)$/
         # Symbol
-        if Symbol.respond_to?(:all_symbols)
-          sym = $1
-          candidates = Symbol.all_symbols.collect{|s| ":" + s.id2name}
-          candidates.grep(/^#{sym}/)
-        else
-          []
-        end
+        Symbol.all_symbols.map(&:inspect).grep(/^#{$1}/)
 
       when /^::([A-Z][^:\.\(]*)$/
         # Absolute Constant or class methods
@@ -124,7 +118,6 @@ module IRB
       when /^(\$[^.]*)$/
         candidates = global_variables.grep(Regexp.new(Regexp.quote($1)))
 
-#      when /^(\$?(\.?[^.]+)+)\.([^.]*)$/
       when /^((\.?[^.]+)+)\.([^.]*)$/
         # variable
         receiver = $1

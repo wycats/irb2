@@ -18,8 +18,7 @@ module IRB
     class Workspaces<Nop
       def execute(*obj)
         workspaces = irb_context.workspaces.map {|w| w.main.inspect} + ["[green]#{irb_context.main.inspect}[/]"]
-        puts IRB.colorize("[blue]Workspaces\n----------[/]\n" <<
-             workspaces.join("\n"))
+        IRB.puts "[blue]Workspaces\n----------[/]\n" << workspaces.join("\n")
         IRB::CommandResult
       end
     end

@@ -29,8 +29,8 @@ module IRB
   class AbstractDisplay
     attr_accessor :io
 
-    def initialize(io = STDOUT)
-      @io = io
+    def io
+      IRB.main_context.output_method
     end
 
     def show(result)
@@ -39,11 +39,11 @@ module IRB
 
   private
     def output(string, result)
-      @io.puts string
+      io.puts string
     end
 
     def format(result)
-      return "" if IRB::CommandResult === result
+      # return "" if IRB::CommandResult === result
       result.inspect
     end
   end
@@ -67,15 +67,7 @@ module IRB
     include EliminateCommands
 
     def show(result)
-      output "#{IRB.job_manager.current_job_id}   => #{format(result)}", result
-    end
-  end
-
-  class XMPDisplay < ArrowDisplay
-    include EliminateCommands
-
-    def show(result)
-      output "   ==> #{format(result)}", result
+      output "[yellow]=>[/] #{format(result)}", result
     end
   end
 
@@ -88,6 +80,9 @@ module IRB
     unless ap_path and conf[:AP_NAME]
       ap_path = File.join(File.dirname(File.dirname(__FILE__)), "irb.rb")
     end
+
+    IRB::OutputMethod.colorizer = ColoredShellString
+
     conf[:AP_NAME] = File::basename(ap_path, ".rb")
 
     conf[:IRB_NAME] = "irb"
@@ -99,7 +94,6 @@ module IRB
     conf[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
     conf[:INSPECT_MODE] = nil
     conf[:USE_TRACER] = false
-    conf[:USE_LOADER] = false
     conf[:ECHO] = nil
     conf[:VERBOSE] = nil
 
@@ -142,13 +136,6 @@ module IRB
         :PROMPT_C => nil,
         :RETURN => SimpleDisplay.new,
         :AUTO_INDENT => true
-      },
-      :XMP => {
-        :PROMPT_I => nil,
-        :PROMPT_N => nil,
-        :PROMPT_S => nil,
-        :PROMPT_C => nil,
-        :RETURN => XMPDisplay.new
       }
     }
 

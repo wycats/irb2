@@ -33,7 +33,6 @@ module IRB
       # Extra modules
       self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
       self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
-      self.use_loader = IRB.conf[:USE_LOADER] if IRB.conf[:USE_LOADER]
       self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVAL_HISTORY]
 
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
@@ -107,6 +106,9 @@ module IRB
     attr_accessor :echo
     attr_accessor :verbose
     attr_reader :debug_level
+
+    attr_reader :input_method
+    attr_reader :output_method
 
     alias use_readline? use_readline
     alias rc? rc
@@ -206,7 +208,7 @@ module IRB
     end
 
     def print_verbose(str)
-      puts str if verbose?
+      IRB.puts str if verbose?
     end
 
     # Formats the prompt according to a format string. Available

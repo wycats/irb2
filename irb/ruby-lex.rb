@@ -260,6 +260,16 @@ class RubyLex
     end
   end
 
+  def get_lex(string)
+    input = ["#{string}\0"].each
+    set_input { input.next }
+    tokens = []
+    until (tk = token).kind_of?(TkEND_OF_SCRIPT)
+      tokens << tk
+    end
+    tokens
+  end
+
   def lex
     until (((tk = token).kind_of?(TkNL) || tk.kind_of?(TkEND_OF_SCRIPT)) &&
              !@continue or
