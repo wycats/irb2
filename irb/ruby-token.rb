@@ -27,7 +27,7 @@ module RubyToken
 
     def to_s
       vars = instance_variables - [:@seek, :@line_no, :@char_no, "@seek", "@line_no", "@char_no"]
-      details = vars.map {|v| "#{v.to_s.sub(/^@/, '')}:#{instance_variable_get(v)}" }.join(" ")
+      details = vars.map {|v| "#{v.to_s.sub(/^@/, '')}:#{instance_variable_get(v).inspect}" }.join(" ")
       "#{self.class.name} #{line_no}:#{char_no} #{details}"
     end
     alias inspect to_s
@@ -232,7 +232,7 @@ module RubyToken
     [:TkSEMICOLON,  Token,  ";"],
 
     [:TkCOMMENT,    TkContents],
-    [:TkRD_COMMENT],
+    [:TkRD_COMMENT, TkContents],
     [:TkSPACE],
     [:TkNL],
     [:TkEND_OF_SCRIPT],
