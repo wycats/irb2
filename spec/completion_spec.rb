@@ -62,7 +62,7 @@ describe "IRB::InputCompletor" do
   end
 
   it "completes symbols" do
-    tab(':callc').should == [':callcc']
+    tab(':sprint').should == [':sprintf']
   end
 
   it "completes global variables" do
@@ -88,6 +88,11 @@ describe "IRB::InputCompletor" do
   it "completes local variables" do
     eval('dude = "test"', IRB.current_context.workspace.binding)
     tab('dud').should == ['dude']
+  end
+
+  it "completes a local variable's methods" do
+    eval('dude = "test"', IRB.current_context.workspace.binding)
+    tab('dude.unp').should == ['dude.unpack']
   end
 
   it "completes reserved words" do
