@@ -28,11 +28,12 @@ module IRB
       IRB.current_context
     end
 
+    # TODO: only disable context and exit for specs
     @ALIASES = [
-      [:context, :irb_context, NO_OVERRIDE],
+      # [:context, :irb_context, NO_OVERRIDE],
       [:conf, :irb_context, NO_OVERRIDE],
       [:irb_quit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
-      [:exit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
+      # [:exit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
       [:quit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
     ]
 
