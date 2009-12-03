@@ -64,7 +64,7 @@ module IRB
 
       when /^(:[^:.]*)$/
         # Symbol
-        Symbol.all_symbols.map(&:inspect).grep(/^#{$1}/)
+        Symbol.all_symbols.map {|e| e.inspect}.grep(/^#{$1}/)
 
       when /^::([A-Z][^:\.\(]*)$/
         # Absolute Constant or class methods

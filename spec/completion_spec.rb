@@ -61,9 +61,9 @@ describe "IRB::InputCompletor" do
     tab('Object::TOP').should == ['Object::TOPLEVEL_BINDING']
   end
 
-  # it "completes symbols" do
-  #   tab(':mai').should == [':main']
-  # end
+  it "completes symbols" do
+    tab(':callc').should == [':callcc']
+  end
 
   it "completes global variables" do
     tab('$SA').should == ['$SAFE']
