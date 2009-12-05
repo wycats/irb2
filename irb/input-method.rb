@@ -25,8 +25,12 @@ module IRB
     end
     attr_reader :file_name
 
-    attr_accessor :prompt
-    
+    attr_accessor :prompt, :prompt_state
+
+    def prompt_for_input
+      print prompt.prompt(*prompt_state)
+    end
+
     def gets
       IRB.fail NotImplementedError, "gets"
     end
@@ -45,7 +49,7 @@ module IRB
     end
 
     def gets
-      print @prompt
+      prompt_for_input
       @line[@line_no += 1] = $stdin.gets
     end
 
@@ -74,7 +78,7 @@ module IRB
     end
 
     def gets
-      print @prompt
+      prompt_for_input
       @io.gets
     end
   end
@@ -92,7 +96,7 @@ module IRB
       end
 
       def gets
-        if l = readline(@prompt, false)
+        if l = readline(prompt.prompt(*prompt_state), false)
           HISTORY.push(l) unless l.empty?
           @line[@line_no += 1] = l + "\n"
         else

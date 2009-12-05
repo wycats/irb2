@@ -110,6 +110,8 @@ module IRB
     def handle_exception(exc)
       return unless exc
 
+      reset_state
+
       print exc.class, ": ", exc, "\n"
 
       irb_bug = exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/
@@ -129,35 +131,41 @@ module IRB
       each_top_level_statement(&block)
     end
 
-    def eval_input
+    def reset_state
       @lines = ""
-      @line_number = 0
+      @relative_line = 0
+      @state = :finished
+    end
+
+    def eval_input
+      @line_number = 1
+      reset_state
 
       # TODO: Use the new prompt object
-      context.io.prompt = ">> "
+      context.io.prompt = IRB::DefaultPrompt.new
+      context.io.prompt_state = [@state, @line_number, 0]
 
       each_top_level_statement do |line, line_no|
-        context.io.prompt = ">> "
-
         # TODO: Lex to see if this is *ever* valid
 
         with_signal_status(:IN_EVAL) do
           begin
             @context.evaluate(line, line_no)
           rescue SyntaxError
+            @state = :incomplete
+            @relative_line += 1
           rescue Interrupt => e
-            @lines = ""
             handle_exception(e)
           rescue SystemExit, SignalException
-            @lines = ""
             raise
           rescue Exception => e
-            @lines = ""
             handle_exception(e)
           else
-            @lines = ""
+            reset_state
           end
         end
+        
+        context.io.prompt_state = [@state, @line_number, @relative_line]
       end
     end
 

@@ -20,10 +20,6 @@ module IRB
     IRB.init_error
     IRB.parse_opts
     IRB.run_config
-
-    unless conf[:PROMPT][conf[:PROMPT_MODE]]
-      IRB.fail(UndefinedPromptMode, conf[:PROMPT_MODE])
-    end
   end
 
   class AbstractDisplay
@@ -85,8 +81,8 @@ module IRB
 
   class DefaultPrompt
     def prompt(state, line, relative_line)
-      prompt = "#{irb_name}(#{main}):#{line_number.rjust(3, "0")}:#{relative_line}"
-      prompt << state == :finished ? "> " : "* "
+      prompt = "#{IRB.main_context.irb_name}(#{IRB.main_context.main}):#{line.to_s.rjust(3, "0")}:#{relative_line}"
+      prompt << (state == :finished ? "> " : "* ")
       prompt
     end
   end
@@ -125,47 +121,6 @@ module IRB
 
     conf[:EVAL_HISTORY] = nil
     conf[:SAVE_HISTORY] = nil
-
-    conf[:PROMPT] = {
-      :NULL => {
-        :PROMPT_I => nil,
-        :PROMPT_N => nil,
-        :PROMPT_S => nil,
-        :PROMPT_C => nil,
-        :RETURN => SimpleDisplay.new
-      },
-      :DEFAULT => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
-        :PROMPT_S => "%N(%m):%03n:%i%l ",
-        :PROMPT_C => "%N(%m):%03n:%i* ",
-        :RETURN => ArrowDisplay.new
-      },
-      :CLASSIC => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
-        :PROMPT_S => "%N(%m):%03n:%i%l ",
-        :PROMPT_C => "%N(%m):%03n:%i* ",
-        :RETURN => SimpleDisplay.new
-      },
-      :SIMPLE => {
-        :PROMPT_I => ">> ",
-        :PROMPT_N => ">> ",
-        :PROMPT_S => nil,
-        :PROMPT_C => "?> ",
-        :RETURN => ArrowDisplay.new
-      },
-      :INF_RUBY => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => nil,
-        :PROMPT_S => nil,
-        :PROMPT_C => nil,
-        :RETURN => SimpleDisplay.new,
-        :AUTO_INDENT => true
-      }
-    }
-
-    conf[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
     conf[:AUTO_INDENT] = false
 
     conf[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING

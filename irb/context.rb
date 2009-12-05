@@ -35,7 +35,7 @@ module IRB
       self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
       self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVAL_HISTORY]
 
-      self.prompt_mode = IRB.conf[:PROMPT_MODE]
+      self.display = ArrowDisplay.new
 
       case input_method
       when nil
@@ -95,12 +95,6 @@ module IRB
     attr_accessor :irb_path
     attr_accessor :use_readline
 
-    attr_reader :prompt_mode
-    attr_accessor :prompt_i
-    attr_accessor :prompt_s
-    attr_accessor :prompt_c
-    attr_accessor :prompt_n
-    attr_accessor :auto_indent_mode
     attr_accessor :display
 
     attr_accessor :echo
@@ -146,21 +140,6 @@ module IRB
       @irb_path ||= "(" + irb_name + ")"
     end
 
-    def prompt_mode=(mode)
-      @prompt_mode = mode
-      pconf = IRB.conf[:PROMPT][mode]
-      @prompt_i = pconf[:PROMPT_I]
-      @prompt_s = pconf[:PROMPT_S]
-      @prompt_c = pconf[:PROMPT_C]
-      @prompt_n = pconf[:PROMPT_N]
-      @display = pconf[:RETURN]
-      if ai = pconf.include?(:AUTO_INDENT)
-        @auto_indent_mode = ai
-      else
-        @auto_indent_mode = IRB.conf[:AUTO_INDENT]
-      end
-    end
-
     def file_input?
       @io.class == FileInputMethod
     end
@@ -187,8 +166,6 @@ module IRB
       return unless echo?
       display.show(last_value)
     end
-
-    PROMPTS = {:ltype => :prompt_s, :continue => :prompt_c, :indent => :prompt_n, :normal => :prompt_i}
 
     def print_verbose(str)
       IRB.puts str if verbose?
