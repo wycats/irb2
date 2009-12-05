@@ -101,9 +101,6 @@ module IRB
       @context = Context.new(self, workspace, input_method, output_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
-
-      @scanner = RubyLex.new
-      @scanner.exception_on_syntax_error = false
       @stdout = STDOUT
     end
 
@@ -125,28 +122,42 @@ module IRB
       IRB.puts "Maybe IRB bug!" if irb_bug
     end
 
-    def eval_input
-      context.set_prompt(scanner)
-      set_input
+    def each_top_level_statement(&block)
+      @lines << context.io.gets
+      @line_number += 1
+      yield @lines, @line_number
+      each_top_level_statement(&block)
+    end
 
-      @scanner.each_top_level_statement do |line, line_no|
+    def eval_input
+      @lines = ""
+      @line_number = 0
+
+      # TODO: Use the new prompt object
+      context.io.prompt = ">> "
+
+      each_top_level_statement do |line, line_no|
+        context.io.prompt = ">> "
+
+        # TODO: Lex to see if this is *ever* valid
+
         with_signal_status(:IN_EVAL) do
           begin
             @context.evaluate(line, line_no)
+          rescue SyntaxError
           rescue Interrupt => e
+            @lines = ""
             handle_exception(e)
           rescue SystemExit, SignalException
+            @lines = ""
             raise
           rescue Exception => e
+            @lines = ""
             handle_exception(e)
+          else
+            @lines = ""
           end
         end
-      end
-    end
-
-    def set_input
-      scanner.set_input do
-        with_signal_status(:IN_INPUT) { context.io.gets || "\n" }
       end
     end
 
@@ -154,7 +165,7 @@ module IRB
       case @signal_status
       when :IN_INPUT
         IRB.puts "^C"
-        raise RubyLex::TerminateLineInput
+        raise StandardError
       when :IN_EVAL
         IRB.irb_abort(self)
       when :IN_LOAD

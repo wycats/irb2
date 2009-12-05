@@ -138,11 +138,10 @@ module IRB
           "red"
         end
 
-        locals = irb.context.workspace.evaluate(nil, "local_variables") - ["_"]
+        locals = irb.context.workspace.evaluate(nil, "local_variables") - ["_", :_]
         locals = locals.empty? ? "none" : locals.join(", ")
 
-        str = format("[blue]#%d[/] [#{status}]%s[/] | locals: %s",
-                     i, irb.context.main, locals)
+        str = "[blue]##{i}[/] [#{status}]#{irb.context.main}[/] | locals: #{locals}"
 
         ary.push str
       end
@@ -212,7 +211,7 @@ module IRB
       case @signal_status
       when :IN_INPUT
         print "^C\n"
-        IRB.job_manager.thread(self).raise RubyLex::TerminateLineInput
+        IRB.job_manager.thread(self).raise StandardError
       when :IN_EVAL
         IRB.irb_abort(self)
       when :IN_LOAD

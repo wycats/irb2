@@ -71,6 +71,32 @@ module IRB
     end
   end
 
+  class AbstractPrompt
+    def prompt(state, line, relative_line)
+      raise NotImplementedError
+    end
+  end
+
+  class NullPrompt
+    def prompt(state, line, relative_line)
+      ""
+    end
+  end
+
+  class DefaultPrompt
+    def prompt(state, line, relative_line)
+      prompt = "#{irb_name}(#{main}):#{line_number.rjust(3, "0")}:#{relative_line}"
+      prompt << state == :finished ? "> " : "* "
+      prompt
+    end
+  end
+
+  class SimplePrompt
+    def prompt(state, line, relative_line)
+      state == :finished ? ">> " : "?> "
+    end
+  end
+
   # conf[ default setting
   def IRB.init_config(ap_path)
     # class instance variables

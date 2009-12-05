@@ -171,8 +171,6 @@ module IRB
 
     def debug_level=(value)
       @debug_level = value
-      RubyLex.debug_level = value
-      SLex.debug_level = value
     end
 
     def debug?
@@ -191,21 +189,6 @@ module IRB
     end
 
     PROMPTS = {:ltype => :prompt_s, :continue => :prompt_c, :indent => :prompt_n, :normal => :prompt_i}
-
-    def set_prompt(scanner)
-      scanner.set_prompt do |state, ltype, indent, line_no|
-        format = send(PROMPTS[state]) || ""
-
-        prompt = prompting? ? format_prompt(format, ltype, indent, line_no) : ""
-
-        if auto_indent_mode && !ltype
-          indent += 1 if state == :continue
-          prompt += " " * indent * 2
-        end
-
-        io.prompt = prompt
-      end
-    end
 
     def print_verbose(str)
       IRB.puts str if verbose?
